@@ -37,12 +37,16 @@ def test_api_health():
 def test_pause_resume_stop():
     print("\n=== 2. Testing Start, Pause, Resume, Stop Controls ===")
     sched = {
-        "items": [{"workflow_id": "wf-doom-scroll-github-popular", "repetitions": 1}],
-        "inter_repetition_delay": 1.0,
-        "inter_workflow_delay": 2.0,
+        "items": [
+            {"workflow_id": "wf-doom-scroll-instagram-reels", "duration_minutes": 0, "repetitions": 0},
+            {"workflow_id": "wf-doom-scroll-github-popular", "duration_minutes": 0, "repetitions": 0}
+        ],
+        "duration_minutes": 0,
+        "inter_repetition_delay": 1.5,
+        "inter_workflow_delay": 3.0,
         "cooldown_interval": 0,
-        "cooldown_duration": 0,
-        "max_execution_duration": 300.0
+        "cooldown_duration": 0.0,
+        "max_execution_duration": None
     }
     res = requests.post(f"{BASE_URL}/api/control/start", json=sched)
     print("Start response:", res.json())
@@ -51,7 +55,6 @@ def test_pause_resume_stop():
     status = requests.get(f"{BASE_URL}/api/status").json()
     print("State while running:", status["progress"]["state"], "| Task:", status["progress"]["current_task_name"])
 
-    # Test PAUSE
     print("Calling Pause...")
     res = requests.post(f"{BASE_URL}/api/control/pause")
     time.sleep(1.0)
@@ -59,7 +62,6 @@ def test_pause_resume_stop():
     print("State after pause:", status["progress"]["state"])
     assert status["progress"]["state"] == "paused", f"Expected paused, got {status['progress']['state']}"
 
-    # Test RESUME
     print("Calling Resume...")
     res = requests.post(f"{BASE_URL}/api/control/resume")
     time.sleep(1.0)
@@ -67,7 +69,6 @@ def test_pause_resume_stop():
     print("State after resume:", status["progress"]["state"])
     assert status["progress"]["state"] == "running", f"Expected running, got {status['progress']['state']}"
 
-    # Test STOP
     print("Calling Stop...")
     res = requests.post(f"{BASE_URL}/api/control/stop")
     time.sleep(1.0)

@@ -57,15 +57,17 @@ class Workflow(BaseModel):
 
 class ScheduledWorkflowItem(BaseModel):
     workflow_id: str
-    repetitions: int = 1
+    duration_minutes: float = 0
+    repetitions: int = 0
 
 class SchedulerConfig(BaseModel):
     items: List[ScheduledWorkflowItem] = Field(default_factory=list)
-    inter_repetition_delay: float = 2.0
-    inter_workflow_delay: float = 4.0
-    cooldown_interval: int = 5
-    cooldown_duration: float = 10.0
-    max_execution_duration: Optional[float] = None  # in seconds (e.g. 600)
+    duration_minutes: float = 0
+    inter_repetition_delay: float = 1.5
+    inter_workflow_delay: float = 3.0
+    cooldown_interval: int = 0
+    cooldown_duration: float = 0.0
+    max_execution_duration: Optional[float] = None
 
 class ExecutionState(str, Enum):
     IDLE = "idle"
@@ -104,4 +106,6 @@ class ExecutionProgress(BaseModel):
     current_queue_index: int = 0
     total_queue_items: int = 0
     elapsed_seconds: float = 0.0
+    duration_minutes: float = 0.0
+    is_infinite: bool = True
     error_message: Optional[str] = None

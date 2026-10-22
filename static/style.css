@@ -131,6 +131,21 @@ body {
   color: var(--text-muted);
 }
 
+.duration-select-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background-color: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+}
+
+.duration-select-box label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 .status-chip {
   display: flex;
   align-items: center;

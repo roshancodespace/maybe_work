@@ -32,6 +32,16 @@
     </div>
 
     <div class="nav-end">
+      <div class="duration-select-box">
+        <label for="runDurationSelect">Duration</label>
+        <select id="runDurationSelect" class="clean-select">
+          <option value="0" selected>Infinite (Non-stop)</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">1 hour</option>
+          <option value="120">2 hours</option>
+        </select>
+      </div>
       <div class="status-chip">
         <span class="status-indicator-dot" id="stateDot"></span>
         <span id="stateLabel" class="status-name">IDLE</span>
@@ -55,15 +65,15 @@
       <div id="metricCurrentTask" class="stat-value truncate">—</div>
     </div>
     <div class="stat-item">
-      <div class="stat-label">Repetition</div>
-      <div id="metricRep" class="stat-value">0 / 0</div>
+      <div class="stat-label">Cycles Completed</div>
+      <div id="metricRep" class="stat-value">Cycle 0</div>
     </div>
     <div class="stat-item">
-      <div class="stat-label">Queue</div>
-      <div id="metricQueue" class="stat-value">0 / 0</div>
+      <div class="stat-label">Duration Mode</div>
+      <div id="metricQueue" class="stat-value">Infinite (Non-stop)</div>
     </div>
     <div class="stat-item">
-      <div class="stat-label">Elapsed</div>
+      <div class="stat-label">Elapsed Time</div>
       <div id="metricElapsed" class="stat-value mono">0.0s</div>
     </div>
   </section>
@@ -80,7 +90,7 @@
           <div class="card-bar">
             <div>
               <div class="card-title">Run Queue</div>
-              <div class="card-subtitle">Workflows run in this sequence</div>
+              <div class="card-subtitle">Workflows run in this sequence continuously</div>
             </div>
             <button id="btnAddQueueItem" class="btn btn-sm btn-tonal">+ Add Workflow</button>
           </div>
@@ -89,32 +99,23 @@
 
         <div class="card">
           <div class="card-bar">
-            <div class="card-title">Timing Rules</div>
+            <div class="card-title">Scroll Pacing</div>
           </div>
           <div class="grid-fields">
             <div class="field">
-              <label for="interRepDelay">Between repetitions (s)</label>
-              <input type="number" id="interRepDelay" class="input-text" min="0" step="0.5" value="2.0">
+              <label for="interRepDelay">Delay between scrolls (s)</label>
+              <input type="number" id="interRepDelay" class="input-text" min="0" step="0.5" value="1.5">
             </div>
             <div class="field">
-              <label for="interWfDelay">Between workflows (s)</label>
-              <input type="number" id="interWfDelay" class="input-text" min="0" step="0.5" value="4.0">
+              <label for="interWfDelay">Delay between workflows (s)</label>
+              <input type="number" id="interWfDelay" class="input-text" min="0" step="0.5" value="3.0">
             </div>
-            <div class="field">
-              <label for="cooldownInterval">Cooldown interval (every N reps)</label>
-              <input type="number" id="cooldownInterval" class="input-text" min="0" value="3">
-            </div>
-            <div class="field">
-              <label for="cooldownDuration">Cooldown length (s)</label>
-              <input type="number" id="cooldownDuration" class="input-text" min="0" step="1" value="8.0">
-            </div>
-            <div class="field full-width">
-              <label for="maxDuration">Time limit (seconds, 0 for none)</label>
-              <input type="number" id="maxDuration" class="input-text" min="0" step="10" value="900">
-            </div>
+            <input type="hidden" id="cooldownInterval" value="0">
+            <input type="hidden" id="cooldownDuration" value="0">
+            <input type="hidden" id="maxDuration" value="0">
           </div>
           <div class="card-footer">
-            <button id="btnSaveScheduler" class="btn btn-sm btn-tonal">Save Rules</button>
+            <button id="btnSaveScheduler" class="btn btn-sm btn-tonal">Save Pacing</button>
           </div>
         </div>
       </div>
@@ -151,8 +152,7 @@
               </select>
             </div>
             <div class="field">
-              <label for="wfRepetitions">Default Repetitions</label>
-              <input type="number" id="wfRepetitions" class="input-text" min="1" value="1">
+              <input type="hidden" id="wfRepetitions" value="0">
             </div>
           </div>
 

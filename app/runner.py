@@ -9,7 +9,7 @@ from app.models import (
     ExecutionState,
     ExecutionProgress,
     ActivityLogEntry,
-    BehaviorPreset
+    ActionType
 )
 from app.device import DeviceManager, ADBDevice
 from app.actions import ActionExecutor
@@ -24,7 +24,7 @@ class AutomationRunner:
         self._thread: Optional[threading.Thread] = None
         self._pause_event = threading.Event()
         self._stop_event = threading.Event()
-        self._pause_event.set()  # set = running, clear = paused
+        self._pause_event.set()
 
         self._lock = threading.Lock()
         self._on_update_callbacks: List[Callable[[], None]] = []
@@ -43,7 +43,7 @@ class AutomationRunner:
         ts = datetime.datetime.now().strftime("%H:%M:%S")
         entry = ActivityLogEntry(
             timestamp=ts,
-            level=level,  # type: ignore
+            level=level,
             message=message,
             workflow_id=workflow_id or self.progress.current_workflow_id,
             task_name=task_name or self.progress.current_task_name
@@ -81,7 +81,7 @@ class AutomationRunner:
             raise RuntimeError("No connected Android device found to execute automation.")
 
         if not scheduler_config.items:
-            raise RuntimeError("No workflows added to scheduler queue.")
+            raise RuntimeError("No workflows added to queue.")
 
         self._stop_event.clear()
         self._pause_event.set()
@@ -90,7 +90,8 @@ class AutomationRunner:
         self.progress.active_device = dev.serial
         self.progress.elapsed_seconds = 0.0
 
-        self.log(f"Starting automation queue on device {dev.serial} ({len(scheduler_config.items)} workflow items)", "info")
+        dur_text = "Infinite (non-stop)" if scheduler_config.duration_minutes <= 0 else f"{scheduler_config.duration_minutes:.1f} minutes"
+        self.log(f"Starting automation: {dur_text} on device {dev.serial}", "info")
 
         self._thread = threading.Thread(
             target=self._run_loop,
@@ -104,81 +105,101 @@ class AutomationRunner:
         if self.progress.state == ExecutionState.RUNNING:
             self._pause_event.clear()
             self.progress.state = ExecutionState.PAUSED
-            self.log("Automation execution paused by user.", "warning")
+            self.log("Automation paused by user.", "warning")
             self._notify_update()
 
     def resume(self):
         if self.progress.state == ExecutionState.PAUSED:
             self.progress.state = ExecutionState.RUNNING
             self._pause_event.set()
-            self.log("Automation execution resumed.", "info")
+            self.log("Automation resumed.", "info")
             self._notify_update()
 
     def stop(self):
         if self.progress.state in [ExecutionState.RUNNING, ExecutionState.PAUSED]:
             self._stop_event.set()
-            self._pause_event.set()  # Unblock thread if paused so it can exit
+            self._pause_event.set()
             self.progress.state = ExecutionState.STOPPED
-            self.log("Automation execution stopped by user.", "warning")
+            self.log("Automation stopped by user.", "warning")
             self._notify_update()
             if self._thread and self._thread.is_alive():
                 self._thread.join(timeout=3.0)
 
     def _run_loop(self, config: SchedulerConfig, workflows: Dict[str, Workflow], device: ADBDevice):
         start_time = time.time()
-        completed_repetitions_total = 0
+        
+        target_limit_sec = None
+        if config.duration_minutes and config.duration_minutes > 0:
+            target_limit_sec = config.duration_minutes * 60.0
+        elif config.max_execution_duration and config.max_execution_duration > 0:
+            target_limit_sec = config.max_execution_duration
 
+        is_infinite = (target_limit_sec is None)
+        self.progress.is_infinite = is_infinite
+        self.progress.duration_minutes = config.duration_minutes
         self.progress.total_queue_items = len(config.items)
 
         try:
-            for item_idx, item in enumerate(config.items):
-                if self._stop_event.is_set():
+            current_queue_idx = 0
+            while not self._stop_event.is_set():
+                if target_limit_sec and (time.time() - start_time) >= target_limit_sec:
+                    self.log(f"Configured duration of {config.duration_minutes:.1f}m reached. Automation complete.", "info")
                     break
 
-                self.progress.current_queue_index = item_idx + 1
+                item = config.items[current_queue_idx % len(config.items)]
+                self.progress.current_queue_index = (current_queue_idx % len(config.items)) + 1
                 wf = workflows.get(item.workflow_id)
                 if not wf:
-                    self.log(f"Workflow ID '{item.workflow_id}' not found in library. Skipping.", "error")
+                    self.log(f"Workflow ID '{item.workflow_id}' not found. Skipping.", "error")
+                    current_queue_idx += 1
                     continue
 
                 self.progress.current_workflow_id = wf.id
                 self.progress.current_workflow_name = wf.name
-                self.progress.total_reps = item.repetitions
                 self.progress.total_tasks = len(wf.tasks)
 
                 executor = ActionExecutor(device, wf.randomization, wf.preset)
 
-                self.log(f"Beginning Workflow [{item_idx + 1}/{len(config.items)}]: '{wf.name}' ({item.repetitions} repetition(s), preset={wf.preset.value})", "info")
+                item_duration_sec = None
+                if item.duration_minutes and item.duration_minutes > 0:
+                    item_duration_sec = item.duration_minutes * 60.0
+                elif len(config.items) > 1 and target_limit_sec:
+                    item_duration_sec = target_limit_sec / len(config.items)
 
-                for rep in range(1, item.repetitions + 1):
-                    if self._stop_event.is_set():
+                item_start_time = time.time()
+                cycle = 0
+
+                while not self._stop_event.is_set():
+                    elapsed = time.time() - start_time
+                    self.progress.elapsed_seconds = round(elapsed, 1)
+
+                    if target_limit_sec and elapsed >= target_limit_sec:
                         break
 
-                    self.progress.current_rep = rep
-                    self.log(f"Workflow '{wf.name}' - Repetition {rep}/{item.repetitions}", "info")
+                    if item_duration_sec and (time.time() - item_start_time) >= item_duration_sec:
+                        self.log(f"Item duration reached for '{wf.name}'. Advancing to next workflow.", "info")
+                        break
 
-                    # Execute each task in the workflow
+                    cycle += 1
+                    self.progress.current_rep = cycle
+                    self.log(f"Workflow '{wf.name}' — Cycle #{cycle}", "info")
+
                     for t_idx, task in enumerate(wf.tasks):
-                        # Check pause / stop before each task
                         while not self._pause_event.is_set() and not self._stop_event.is_set():
                             time.sleep(0.3)
 
                         if self._stop_event.is_set():
                             break
 
-                        # Check time limit
                         elapsed = time.time() - start_time
                         self.progress.elapsed_seconds = round(elapsed, 1)
-                        if config.max_execution_duration and elapsed >= config.max_execution_duration:
-                            self.log(f"Max execution duration reached ({config.max_execution_duration}s). Stopping.", "warning")
-                            self._stop_event.set()
+                        if target_limit_sec and elapsed >= target_limit_sec:
                             break
 
-                        # Verify device connectivity
                         if not device.is_connected():
-                            self.log(f"Device disconnected: {device.serial}! Pausing automation.", "error")
+                            self.log(f"Device disconnected! Pausing until reconnected.", "error")
                             self.progress.state = ExecutionState.PAUSED
-                            self.progress.error_message = f"Device {device.serial} disconnected"
+                            self.progress.error_message = "Device disconnected"
                             self._pause_event.clear()
                             self._notify_update()
                             while not self._pause_event.is_set() and not self._stop_event.is_set():
@@ -186,52 +207,54 @@ class AutomationRunner:
                             if self._stop_event.is_set():
                                 break
 
+                        if cycle > 1:
+                            if task.action_type in [ActionType.LAUNCH_APP, ActionType.OPEN_URL]:
+                                continue
+                            if task.action_type == ActionType.TAP_COORDS and ("tab" in task.name.lower() or "switch" in task.name.lower()):
+                                continue
+                            if task.action_type == ActionType.WAIT_INSPECT and ("init" in task.id or "first" in task.id):
+                                continue
+
                         self.progress.current_task_index = t_idx + 1
                         self.progress.current_task_name = task.name
                         self._notify_update()
 
-                        # Execute action
-                        success = executor.execute_action(
-                            task,
-                            logger=lambda msg, lvl: self.log(msg, lvl, wf.id, task.name),
-                            should_stop=lambda: self._stop_event.is_set()
-                        )
+                        try:
+                            executor.execute_action(
+                                task,
+                                logger=lambda msg, lvl: self.log(msg, lvl, wf.id, task.name),
+                                should_stop=lambda: self._stop_event.is_set()
+                            )
+                        except Exception as e:
+                            self.log(f"Notice on task '{task.name}': {e}. Continuing...", "warning")
+                            time.sleep(1.0)
 
-                        if not success and task.on_failure == "abort":
-                            self.log(f"Workflow '{wf.name}' aborted due to task failure.", "error")
-                            break
-
-                    completed_repetitions_total += 1
-
-                    # Cooldown check
-                    if config.cooldown_interval > 0 and (completed_repetitions_total % config.cooldown_interval == 0):
-                        if rep < item.repetitions or item_idx < (len(config.items) - 1):
-                            self.log(f"Scheduled cooldown triggered: resting for {config.cooldown_duration:.1f}s...", "info")
-                            time.sleep(config.cooldown_duration)
-
-                    # Inter-repetition delay
-                    if rep < item.repetitions and not self._stop_event.is_set():
-                        self.log(f"Waiting {config.inter_repetition_delay:.1f}s before next repetition...", "info")
+                    if not self._stop_event.is_set() and config.inter_repetition_delay > 0:
                         time.sleep(config.inter_repetition_delay)
 
-                # Inter-workflow delay
-                if item_idx < (len(config.items) - 1) and not self._stop_event.is_set():
-                    self.log(f"Workflow '{wf.name}' completed. Waiting {config.inter_workflow_delay:.1f}s before next workflow...", "info")
+                    if not is_infinite and not item_duration_sec and cycle >= max(1, item.repetitions):
+                        break
+
+                current_queue_idx += 1
+                if not self._stop_event.is_set() and len(config.items) > 1:
                     time.sleep(config.inter_workflow_delay)
+
+                if not is_infinite and current_queue_idx >= len(config.items) and not target_limit_sec:
+                    break
 
             total_elapsed = round(time.time() - start_time, 1)
             self.progress.elapsed_seconds = total_elapsed
 
             if self._stop_event.is_set() and self.progress.state != ExecutionState.ERROR:
                 self.progress.state = ExecutionState.STOPPED
-                self.log(f"Automation stopped after {total_elapsed}s.", "warning")
+                self.log(f"Automation stopped by user after {total_elapsed}s.", "warning")
             else:
                 self.progress.state = ExecutionState.COMPLETED
-                self.log(f"All scheduled workflows finished successfully in {total_elapsed}s!", "success")
+                self.log(f"Automation completed in {total_elapsed}s.", "success")
 
         except Exception as e:
             self.progress.state = ExecutionState.ERROR
             self.progress.error_message = str(e)
-            self.log(f"Automation execution halted due to error: {e}", "error")
+            self.log(f"Automation halted due to error: {e}", "error")
         finally:
             self._notify_update()

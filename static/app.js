@@ -41,6 +41,7 @@ const el = {
   btnPause: document.getElementById("btnPause"),
   btnResume: document.getElementById("btnResume"),
   btnStop: document.getElementById("btnStop"),
+  runDurationSelect: document.getElementById("runDurationSelect"),
 
   tabBtnScheduler: document.getElementById("tabBtnScheduler"),
   tabBtnWorkflows: document.getElementById("tabBtnWorkflows"),
@@ -678,21 +679,13 @@ function renderQueueList() {
         <span class="queue-row-title">${escapeHtml(wfName)}</span>
       </div>
       <div class="queue-row-actions">
-        <span class="reps-label">Reps:</span>
-        <input type="number" class="form-input queue-rep-input" data-idx="${index}" min="1" value="${item.repetitions || 1}">
-        <button class="btn btn-xs btn-secondary btn-queue-up" data-idx="${index}" ${index === 0 ? "disabled" : ""}>Up</button>
-        <button class="btn btn-xs btn-secondary btn-queue-down" data-idx="${index}" ${index === state.scheduler.items.length - 1 ? "disabled" : ""}>Down</button>
-        <button class="btn btn-xs btn-danger-text btn-queue-del" data-idx="${index}">Remove</button>
+        <span class="task-type-badge">Non-stop</span>
+        <button class="btn btn-xs btn-tonal btn-queue-up" data-idx="${index}" ${index === 0 ? "disabled" : ""}>Up</button>
+        <button class="btn btn-xs btn-tonal btn-queue-down" data-idx="${index}" ${index === state.scheduler.items.length - 1 ? "disabled" : ""}>Down</button>
+        <button class="btn btn-xs btn-text-danger btn-queue-del" data-idx="${index}">Remove</button>
       </div>
     `;
     el.queueList.appendChild(div);
-  });
-
-  el.queueList.querySelectorAll(".queue-rep-input").forEach((inp) => {
-    inp.addEventListener("change", (e) => {
-      const idx = parseInt(e.target.dataset.idx);
-      state.scheduler.items[idx].repetitions = Math.max(1, parseInt(e.target.value) || 1);
-    });
   });
 
   el.queueList.querySelectorAll(".btn-queue-up").forEach((b) => {
@@ -755,12 +748,13 @@ async function handleSaveScheduler() {
 
 // Execution Controls
 async function handleStart() {
-  state.scheduler.inter_repetition_delay = parseFloat(el.interRepDelay.value) || 2.0;
-  state.scheduler.inter_workflow_delay = parseFloat(el.interWfDelay.value) || 4.0;
-  state.scheduler.cooldown_interval = parseInt(el.cooldownInterval.value) || 3;
-  state.scheduler.cooldown_duration = parseFloat(el.cooldownDuration.value) || 8.0;
-  const maxD = parseFloat(el.maxDuration.value);
-  state.scheduler.max_execution_duration = (maxD && maxD > 0) ? maxD : null;
+  const durVal = parseFloat(el.runDurationSelect ? el.runDurationSelect.value : "0") || 0;
+  state.scheduler.duration_minutes = durVal;
+  state.scheduler.max_execution_duration = durVal > 0 ? (durVal * 60) : null;
+  state.scheduler.inter_repetition_delay = parseFloat(el.interRepDelay.value) || 1.5;
+  state.scheduler.inter_workflow_delay = parseFloat(el.interWfDelay.value) || 3.0;
+  state.scheduler.cooldown_interval = 0;
+  state.scheduler.cooldown_duration = 0;
 
   try {
     const res = await fetch("/api/control/start", {
@@ -801,7 +795,6 @@ async function handleStop() {
   }
 }
 
-// Status Updates
 async function loadStatus() {
   try {
     const res = await fetch("/api/status");
@@ -842,8 +835,8 @@ function updateProgressUI(p) {
 
   el.metricCurrentWf.textContent = p.current_workflow_name || "—";
   el.metricCurrentTask.textContent = p.current_task_name ? `${p.current_task_index}/${p.total_tasks} - ${p.current_task_name}` : "—";
-  el.metricRep.textContent = p.total_reps > 0 ? `${p.current_rep} / ${p.total_reps}` : "0 / 0";
-  el.metricQueue.textContent = p.total_queue_items > 0 ? `${p.current_queue_index} / ${p.total_queue_items}` : "0 / 0";
+  el.metricRep.textContent = `Cycle ${p.current_rep || 0}`;
+  el.metricQueue.textContent = (p.duration_minutes && p.duration_minutes > 0) ? `${p.duration_minutes}m limit` : "Infinite (Non-stop)";
   el.metricElapsed.textContent = `${p.elapsed_seconds.toFixed(1)}s`;
 }
 

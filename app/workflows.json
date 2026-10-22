@@ -256,17 +256,20 @@
     "items": [
       {
         "workflow_id": "wf-doom-scroll-instagram-reels",
-        "repetitions": 999
+        "duration_minutes": 0,
+        "repetitions": 0
       },
       {
         "workflow_id": "wf-doom-scroll-github-popular",
-        "repetitions": 999
+        "duration_minutes": 0,
+        "repetitions": 0
       }
     ],
+    "duration_minutes": 0,
     "inter_repetition_delay": 1.5,
     "inter_workflow_delay": 3.0,
-    "cooldown_interval": 10,
-    "cooldown_duration": 15.0,
+    "cooldown_interval": 0,
+    "cooldown_duration": 0.0,
     "max_execution_duration": null
   }
 }
