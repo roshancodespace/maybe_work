@@ -1,0 +1,272 @@
+{
+  "workflows": [
+    {
+      "id": "wf-doom-scroll-instagram-reels",
+      "name": "Instagram Reels Infinite Doom Scroller",
+      "description": "Infinite doom scroller for Instagram Reels: launches Instagram, navigates to Reels, swipes through reels with randomized watch durations and natural wiggles.",
+      "preset": "natural",
+      "randomization": {
+        "min_delay": 0.8,
+        "max_delay": 2.2,
+        "min_scroll_pct": 0.4,
+        "max_scroll_pct": 0.7,
+        "swipe_duration_min": 210,
+        "swipe_duration_max": 300,
+        "wiggle_enabled": true,
+        "wiggle_chance": 0.25,
+        "reading_pause_chance": 0.2,
+        "reading_pause_min": 2.0,
+        "reading_pause_max": 5.0,
+        "explore_result_variation": true
+      },
+      "tasks": [
+        {
+          "id": "ig-task-launch",
+          "name": "1. Launch Instagram",
+          "action_type": "launch_app",
+          "params": {
+            "package": "com.instagram.android"
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "ig-task-wait-init",
+          "name": "2. Wait for App Load",
+          "action_type": "wait_inspect",
+          "params": {
+            "seconds": 2.5
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "ig-task-tap-reels",
+          "name": "3. Switch to Reels Tab",
+          "action_type": "tap_coords",
+          "params": {
+            "x": 0.3,
+            "y": 0.96
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "ig-task-wait-first-reel",
+          "name": "4. Watch First Reel",
+          "action_type": "wait_inspect",
+          "params": {
+            "seconds": 3.0
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "ig-task-reel-1",
+          "name": "5. Next Reel (Watch ~6s)",
+          "action_type": "swipe_next_reel",
+          "params": {
+            "direction": "up",
+            "watch_seconds": 6.0
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "ig-task-reel-2",
+          "name": "6. Next Reel (Watch ~8s)",
+          "action_type": "swipe_next_reel",
+          "params": {
+            "direction": "up",
+            "watch_seconds": 8.0
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "ig-task-reel-3",
+          "name": "7. Next Reel (Watch ~5s)",
+          "action_type": "swipe_next_reel",
+          "params": {
+            "direction": "up",
+            "watch_seconds": 5.0
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "ig-task-reel-4",
+          "name": "8. Next Reel (Watch ~10s)",
+          "action_type": "swipe_next_reel",
+          "params": {
+            "direction": "up",
+            "watch_seconds": 10.0
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        }
+      ],
+      "repetitions": 999
+    },
+    {
+      "id": "wf-doom-scroll-github-popular",
+      "name": "GitHub Popular Repos Infinite Doom Scroller",
+      "description": "Infinite doom scroller for GitHub popular repositories: browses top-starred repos, opens each repository to read details and README, then presses Back to continue scrolling down the list.",
+      "preset": "natural",
+      "randomization": {
+        "min_delay": 1.0,
+        "max_delay": 2.5,
+        "min_scroll_pct": 0.35,
+        "max_scroll_pct": 0.65,
+        "swipe_duration_min": 220,
+        "swipe_duration_max": 380,
+        "wiggle_enabled": true,
+        "wiggle_chance": 0.35,
+        "reading_pause_chance": 0.3,
+        "reading_pause_min": 2.5,
+        "reading_pause_max": 5.0,
+        "explore_result_variation": true
+      },
+      "tasks": [
+        {
+          "id": "gh-task-open-popular",
+          "name": "1. Open GitHub Popular Repositories",
+          "action_type": "open_url",
+          "params": {
+            "url": "https://github.com/search?q=stars:>10000&s=stars&o=desc"
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "gh-task-wait-popular",
+          "name": "2. Inspect Popular Repositories List",
+          "action_type": "wait_inspect",
+          "params": {
+            "seconds": 2.5
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "gh-task-scroll-list-1",
+          "name": "3. Scroll Down Through Popular Repos",
+          "action_type": "human_scroll",
+          "params": {
+            "direction": "down",
+            "distance_pct": 0.45
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "gh-task-open-repo",
+          "name": "4. Open Repository Details",
+          "action_type": "tap_coords",
+          "params": {
+            "x": 0.35,
+            "y": 0.3
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 2
+        },
+        {
+          "id": "gh-task-wait-repo",
+          "name": "5. Inspect Repository Details",
+          "action_type": "wait_inspect",
+          "params": {
+            "seconds": 3.0
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "gh-task-scroll-readme-1",
+          "name": "6. Scroll Down into README",
+          "action_type": "human_scroll",
+          "params": {
+            "direction": "down",
+            "distance_pct": 0.55
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "gh-task-read-pause",
+          "name": "7. Reading Pause on Documentation",
+          "action_type": "wait_inspect",
+          "params": {
+            "seconds": 3.5
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "gh-task-back-to-list",
+          "name": "8. Press Back to Return to Popular Repos",
+          "action_type": "press_back",
+          "params": {},
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "gh-task-wait-after-back",
+          "name": "9. Wait for List Screen",
+          "action_type": "wait_inspect",
+          "params": {
+            "seconds": 2.0
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        },
+        {
+          "id": "gh-task-scroll-next-repo",
+          "name": "10. Scroll Down to Next Repository",
+          "action_type": "human_scroll",
+          "params": {
+            "direction": "down",
+            "distance_pct": 0.5
+          },
+          "enabled": true,
+          "on_failure": "continue",
+          "retries": 1
+        }
+      ],
+      "repetitions": 999
+    }
+  ],
+  "scheduler": {
+    "items": [
+      {
+        "workflow_id": "wf-doom-scroll-instagram-reels",
+        "repetitions": 999
+      },
+      {
+        "workflow_id": "wf-doom-scroll-github-popular",
+        "repetitions": 999
+      }
+    ],
+    "inter_repetition_delay": 1.5,
+    "inter_workflow_delay": 3.0,
+    "cooldown_interval": 10,
+    "cooldown_duration": 15.0,
+    "max_execution_duration": null
+  }
+}

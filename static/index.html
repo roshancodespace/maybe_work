@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Android Automation Engine</title>
+  
+  <!-- Montserrat and JetBrains Mono Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+  <!-- Ambient Space Glow -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- Antigravity App Bar -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-logo">
+        <svg class="brand-glyph" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="9" stroke="url(#agGrad)" stroke-width="1.8" stroke-dasharray="4 2"/>
+          <path d="M12 4L18 17H6L12 4Z" fill="url(#agGrad)" opacity="0.85"/>
+          <circle cx="12" cy="12" r="2" fill="#ffffff"/>
+          <defs>
+            <linearGradient id="agGrad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00f2fe"/>
+              <stop offset="0.5" stop-color="#38bdf8"/>
+              <stop offset="1" stop-color="#818cf8"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="brand-info">
+        <div class="brand-title">ANTIGRAVITY</div>
+        <div class="brand-subtitle">AUTOMATION ENGINE</div>
+      </div>
+    </div>
+
+    <!-- Active Hardware Capsule -->
+    <div class="hardware-capsule">
+      <span class="capsule-label">TARGET</span>
+      <select id="deviceSelect" class="hardware-select"></select>
+      <span id="deviceStatusBadge" class="status-tag tag-offline">Connecting</span>
+      <span id="deviceSpecs" class="specs-badge"></span>
+    </div>
+
+    <!-- Core State & Cockpit Controls -->
+    <div class="cockpit-deck">
+      <div class="core-status-pill">
+        <span class="status-indicator-dot" id="stateDot"></span>
+        <span class="status-text-prefix">CORE</span>
+        <span id="stateLabel" class="engine-state-text">IDLE</span>
+      </div>
+      <div class="cockpit-actions">
+        <button id="btnStart" class="btn btn-start">
+          <span class="btn-glow"></span>
+          <span class="btn-text">START RUN</span>
+        </button>
+        <button id="btnPause" class="btn btn-pause" disabled>
+          <span class="btn-text">PAUSE</span>
+        </button>
+        <button id="btnResume" class="btn btn-resume" style="display:none;">
+          <span class="btn-text">RESUME</span>
+        </button>
+        <button id="btnStop" class="btn btn-stop" disabled>
+          <span class="btn-text">ABORT</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Telemetry HUD Bar -->
+  <section class="telemetry-bar">
+    <div class="telemetry-cell">
+      <span class="telemetry-label">ACTIVE WORKFLOW</span>
+      <span id="metricCurrentWf" class="telemetry-value highlight">—</span>
+    </div>
+    <div class="telemetry-cell">
+      <span class="telemetry-label">CURRENT TASK</span>
+      <span id="metricCurrentTask" class="telemetry-value truncate">—</span>
+    </div>
+    <div class="telemetry-cell">
+      <span class="telemetry-label">CYCLE PROGRESS</span>
+      <span id="metricRep" class="telemetry-value">0 / 0</span>
+    </div>
+    <div class="telemetry-cell">
+      <span class="telemetry-label">QUEUE STAGE</span>
+      <span id="metricQueue" class="telemetry-value">0 / 0</span>
+    </div>
+    <div class="telemetry-cell">
+      <span class="telemetry-label">MISSION ELAPSED</span>
+      <span id="metricElapsed" class="telemetry-value mono">0.0s</span>
+    </div>
+  </section>
+
+  <!-- Main Viewport Workspace -->
+  <main class="app-workspace">
+    <!-- Left Wing: Configuration Deck -->
+    <section class="deck-wing config-deck">
+      <!-- Minimalist Segmented Tabs -->
+      <nav class="segment-tabs">
+        <button id="tabBtnScheduler" class="segment-tab active">
+          <span class="tab-marker"></span>
+          <span>SCHEDULER & QUEUE</span>
+        </button>
+        <button id="tabBtnWorkflows" class="segment-tab">
+          <span class="tab-marker"></span>
+          <span>WORKFLOW DESIGNER</span>
+        </button>
+      </nav>
+
+      <!-- Scheduler & Queue View -->
+      <div id="tabContentScheduler" class="tab-view active">
+        <div class="glass-card">
+          <div class="card-header-bar">
+            <div>
+              <h2 class="card-title">EXECUTION SEQUENCE</h2>
+              <p class="card-desc">Workflows execute in strict order with configured repetition counts.</p>
+            </div>
+            <button id="btnAddQueueItem" class="btn btn-outline-cyan">+ ENQUEUE WORKFLOW</button>
+          </div>
+
+          <div id="queueList" class="queue-container">
+            <!-- Dynamic Queue Items -->
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-header-bar">
+            <div>
+              <h3 class="card-title">TIMING & RUNTIME RULES</h3>
+              <p class="card-desc">Jitter pacing and safety cooldown triggers.</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field-box">
+              <label for="interRepDelay">Inter-repetition delay (s)</label>
+              <input type="number" id="interRepDelay" class="ag-input" min="0" step="0.5" value="2.0">
+            </div>
+            <div class="field-box">
+              <label for="interWfDelay">Inter-workflow delay (s)</label>
+              <input type="number" id="interWfDelay" class="ag-input" min="0" step="0.5" value="4.0">
+            </div>
+            <div class="field-box">
+              <label for="cooldownInterval">Cooldown interval (every N reps)</label>
+              <input type="number" id="cooldownInterval" class="ag-input" min="0" value="3">
+            </div>
+            <div class="field-box">
+              <label for="cooldownDuration">Cooldown duration (s)</label>
+              <input type="number" id="cooldownDuration" class="ag-input" min="0" step="1" value="8.0">
+            </div>
+            <div class="field-box span-all">
+              <label for="maxDuration">Max runtime limit (s, 0 for unlimited)</label>
+              <input type="number" id="maxDuration" class="ag-input" min="0" step="10" value="900">
+            </div>
+          </div>
+
+          <div class="card-action-end">
+            <button id="btnSaveScheduler" class="btn btn-outline-cyan">SAVE SCHEDULE RULES</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workflow Designer View -->
+      <div id="tabContentWorkflows" class="tab-view">
+        <div class="glass-card">
+          <div class="card-header-bar">
+            <div class="workflow-selector-group">
+              <label for="wfSelect" class="tiny-label">SELECTED WORKFLOW</label>
+              <select id="wfSelect" class="ag-select"></select>
+            </div>
+            <div class="card-action-buttons">
+              <button id="btnNewWorkflow" class="btn btn-outline">NEW</button>
+              <button id="btnDuplicateWorkflow" class="btn btn-outline">DUPLICATE</button>
+              <button id="btnDeleteWorkflow" class="btn btn-outline-danger">DELETE</button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field-box span-all">
+              <label for="wfName">Workflow Name</label>
+              <input type="text" id="wfName" class="ag-input" placeholder="e.g. Instagram Reels Infinite Doom Scroller">
+            </div>
+            <div class="field-box span-all">
+              <label for="wfDesc">Description & Directives</label>
+              <input type="text" id="wfDesc" class="ag-input" placeholder="Workflow objectives and flow summary">
+            </div>
+            <div class="field-box">
+              <label for="wfPreset">Behavior Preset</label>
+              <select id="wfPreset" class="ag-select">
+                <option value="consistent">Consistent (Uniform Timing)</option>
+                <option value="natural" selected>Natural (Humanized Jitter & Curve)</option>
+                <option value="exploratory">Exploratory (High Variance & Pauses)</option>
+              </select>
+            </div>
+            <div class="field-box">
+              <label for="wfRepetitions">Default Repetitions</label>
+              <input type="number" id="wfRepetitions" class="ag-input" min="1" value="1">
+            </div>
+          </div>
+
+          <!-- Advanced Randomization Details -->
+          <details class="antigravity-accordion">
+            <summary class="accordion-trigger">
+              <span>RANDOMIZATION & BIOMETRIC PACING</span>
+              <span class="accordion-icon"></span>
+            </summary>
+            <div class="accordion-content">
+              <div class="form-grid">
+                <div class="field-box">
+                  <label>Action Delay Interval (seconds)</label>
+                  <div class="split-range">
+                    <input type="number" id="randDelayMin" class="ag-input" min="0.2" step="0.1" value="1.0">
+                    <span class="range-divider">to</span>
+                    <input type="number" id="randDelayMax" class="ag-input" min="0.5" step="0.1" value="2.5">
+                  </div>
+                </div>
+                <div class="field-box">
+                  <label>Scroll Height Range (% screen)</label>
+                  <div class="split-range">
+                    <input type="number" id="randScrollMin" class="ag-input" min="0.1" max="0.9" step="0.05" value="0.30">
+                    <span class="range-divider">to</span>
+                    <input type="number" id="randScrollMax" class="ag-input" min="0.1" max="0.9" step="0.05" value="0.65">
+                  </div>
+                </div>
+                <div class="field-box">
+                  <label>Reading Pause Probability (%)</label>
+                  <input type="number" id="randPauseChance" class="ag-input" min="0" max="100" value="25">
+                </div>
+                <div class="field-box flex-center">
+                  <label class="antigravity-switch">
+                    <input type="checkbox" id="randWiggleEnabled" checked>
+                    <span class="switch-slider"></span>
+                    <span class="switch-text">Human Micro-Wiggle / Adjustments</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Task List Deck -->
+        <div class="glass-card">
+          <div class="card-header-bar">
+            <div>
+              <h3 class="card-title">SEQUENCE TASKS (<span id="taskCount" class="counter-highlight">0</span>)</h3>
+              <p class="card-desc">Ordered actions executed by ADB on the target device.</p>
+            </div>
+            <button id="btnAddTask" class="btn btn-outline-cyan">+ ADD TASK</button>
+          </div>
+
+          <div id="taskList" class="tasks-container">
+            <!-- Dynamic Task Rows -->
+          </div>
+
+          <div class="card-action-end">
+            <button id="btnSaveWorkflow" class="btn btn-save-primary">SAVE WORKFLOW CHANGES</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Wing: Mirror Viewport & Telemetry Stream -->
+    <section class="deck-wing monitor-deck">
+      <!-- Phone Viewport Card -->
+      <div class="glass-card viewport-card">
+        <div class="card-header-bar compact">
+          <div class="viewport-title-group">
+            <span class="radar-dot"></span>
+            <span class="card-title-sm">LIVE HARDWARE MIRROR</span>
+            <span id="screenDimensions" class="dim-badge mono">1080×2408</span>
+          </div>
+          <div class="viewport-actions">
+            <button id="btnDeviceBack" class="btn btn-hardware" title="Hardware Back">BACK</button>
+            <button id="btnDeviceHome" class="btn btn-hardware" title="Hardware Home">HOME</button>
+            <button id="btnRefreshScreen" class="btn btn-hardware" title="Force Frame Capture">FRAME</button>
+            <label class="stream-toggle">
+              <input type="checkbox" id="autoRefreshToggle" checked>
+              <span class="stream-dot"></span>
+              <span class="stream-text">STREAM</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="phone-chassis">
+          <div class="phone-rim">
+            <div class="phone-notch"></div>
+            <div class="screen-canvas" id="screenContainer">
+              <img id="deviceScreenImg" src="/api/device/screenshot" alt="Device Screen">
+              <div id="screenTapIndicator" class="touch-ripple-marker"></div>
+            </div>
+          </div>
+          <div class="phone-hint">Direct Touch Forwarding: Click anywhere inside screen to simulate hardware tap.</div>
+        </div>
+      </div>
+
+      <!-- Real-time Activity Telemetry Terminal -->
+      <div class="glass-card terminal-card">
+        <div class="card-header-bar compact">
+          <div class="terminal-title-group">
+            <span class="terminal-status-dot"></span>
+            <span class="card-title-sm">ACTIVITY TELEMETRY CONSOLE</span>
+          </div>
+          <div class="terminal-actions">
+            <label class="stream-toggle">
+              <input type="checkbox" id="logAutoScroll" checked>
+              <span class="stream-dot"></span>
+              <span class="stream-text">AUTO-SCROLL</span>
+            </label>
+            <button id="btnClearLogs" class="btn btn-terminal-clear">CLEAR</button>
+          </div>
+        </div>
+        <div id="activityLog" class="terminal-body">
+          <!-- Realtime Log Stream -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Task Configuration Modal -->
+  <div id="taskModal" class="ag-modal-backdrop">
+    <div class="ag-modal-card">
+      <div class="ag-modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-badge">ACTION</span>
+          <h3 id="taskModalTitle" class="modal-title-text">Configure Step</h3>
+        </div>
+        <button id="btnModalClose" class="modal-btn-close">✕</button>
+      </div>
+
+      <div class="ag-modal-body">
+        <input type="hidden" id="editTaskId">
+        <div class="field-box">
+          <label for="taskNameInput">Step Label</label>
+          <input type="text" id="taskNameInput" class="ag-input" placeholder="e.g. Next Reel (Watch ~6s)">
+        </div>
+
+        <div class="field-box">
+          <label for="taskTypeSelect">Action Type</label>
+          <select id="taskTypeSelect" class="ag-select">
+            <option value="swipe_next_reel">Swipe Next Reel (Natural watch & scroll)</option>
+            <option value="open_url">Open URL in Browser</option>
+            <option value="search_topic">Search Topic</option>
+            <option value="human_scroll">Humanized Scroll</option>
+            <option value="tap_element">Tap UI Element (Semantic text / desc / id)</option>
+            <option value="find_and_click_more">Find and Click 'More' Button</option>
+            <option value="tap_coords">Tap Coordinates</option>
+            <option value="enter_text">Enter Text (Keyboard)</option>
+            <option value="press_back">Press Back Key</option>
+            <option value="press_key">Press Key (HOME, ENTER, etc.)</option>
+            <option value="wait_inspect">Wait & Inspect Screen</option>
+            <option value="launch_app">Launch Application</option>
+            <option value="cooldown">Cooldown Pause</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Parameters Container -->
+        <div id="taskParamsContainer" class="dynamic-params-container">
+          <!-- Populated dynamically by app.js -->
+        </div>
+
+        <div class="form-grid pt-sm">
+          <div class="field-box">
+            <label for="taskOnFailure">Failure Recovery Protocol</label>
+            <select id="taskOnFailure" class="ag-select">
+              <option value="continue">Continue (Ignore error)</option>
+              <option value="retry">Retry step</option>
+              <option value="abort">Abort entire workflow</option>
+            </select>
+          </div>
+          <div class="field-box">
+            <label for="taskRetries">Max Retries</label>
+            <input type="number" id="taskRetries" class="ag-input" min="1" max="5" value="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="ag-modal-footer">
+        <button id="btnModalCancel" class="btn btn-outline">CANCEL</button>
+        <button id="btnModalSave" class="btn btn-save-primary">SAVE STEP</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+
+</html>
