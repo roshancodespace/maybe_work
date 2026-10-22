@@ -1,25 +1,24 @@
-# Antigravity // Android Automation Engine
+# Device Automator
 
-A lightweight, futuristic Android automation tool inspired by the Google Antigravity aesthetic. Directly interfaces with physical and virtual Android devices connected via ADB and executes configurable, repeatable multi-step workflows through an ultra-clean, responsive dark web dashboard styled with Montserrat typography and luminous telemetry indicators.
+A local Android automation tool that controls Android devices connected via ADB and executes configurable multi-step workflows through a flat web dashboard built with Montserrat typography.
 
 ---
 
 ## Highlights
 
-- **Google Antigravity Aesthetic**: Minimalist obsidian void theme (`#07080c`), glassmorphic panels, glowing telemetry indicators, and refined **Montserrat** typography.
-- **Dedicated Unique Port**: Binds to **`28491`** (`http://127.0.0.1:28491`) out-of-the-box, avoiding common service conflicts.
-- **Strictly Idempotent Server Runner**:
-  - Automatically identifies and shuts down lingering processes or port listeners before launching.
-  - Automatically traps `SIGINT` (Ctrl+C), `SIGTERM`, and `EXIT` to ensure zero orphaned background processes.
-  - Provides `./run.sh [start|stop|restart|status]` with optional `--daemon` / `-d` background mode.
-- **Infinite Doom Scrollers**:
-  1. **Instagram Reels Infinite Doom Scroller**: Launches Instagram (`com.instagram.android`), navigates directly to the Reels feed tab, and continuously swipes through reels with randomized, natural watch times (4–12s) and micro-wiggles.
-  2. **GitHub Popular Repos Infinite Doom Scroller**: Opens GitHub top-starred repositories (`stars:>10000`), scrolls through results, taps into repository details, scrolls down into the README/documentation with natural reading pauses, presses `BACK`, and scrolls down to inspect the next repository.
-- **Cross-Platform Standalone Binaries**:
-  - Single-file executables for **Linux** and **Windows** generated via PyInstaller.
-  - Bundles the FastAPI engine, Uvicorn, static web assets, and default workflows into a portable executable.
-- **CI/CD Release Automation**:
-  - GitHub Actions workflow (`.github/workflows/release.yml`) builds standalone binaries on Ubuntu and Windows runners and publishes GitHub Releases.
+- **Clean Flat Interface**: Clean dark theme with flat material layout, Montserrat typography, and responsive controls.
+- **Dedicated Port**: Runs on port `28491` (`http://127.0.0.1:28491`) to prevent port collisions.
+- **Idempotent Server Runner**:
+  - Checks and shuts down old processes or listeners before starting.
+  - Automatically cleans up child processes and PID file upon exit (`Ctrl+C` or `SIGTERM`).
+  - Supports `./run.sh [start|stop|restart|status]` and daemon mode (`-d`).
+- **Included Workflows**:
+  1. **Instagram Reels Infinite Doom Scroller**: Launches Instagram, opens the Reels tab, and scrolls through reels with randomized watch durations (4–12s).
+  2. **GitHub Popular Repos Infinite Doom Scroller**: Searches top-starred repos, scrolls the list, opens repo details, reads the README, presses back, and scrolls to the next repo.
+- **Standalone Binaries**:
+  - Compiles into single-file standalone executables for Linux and Windows using PyInstaller.
+- **GitHub Release CI/CD**:
+  - Automated release workflow in `.github/workflows/release.yml` building both binaries and attaching them to GitHub Releases.
 
 ---
 
@@ -28,38 +27,38 @@ A lightweight, futuristic Android automation tool inspired by the Google Antigra
 ```
 .
 ├── .github/workflows/
-│   └── release.yml             # GitHub Actions CI/CD workflow for Linux & Windows
+│   └── release.yml
 ├── app/
-│   ├── main.py                 # FastAPI backend, REST endpoints & WebSocket server
-│   ├── device.py               # ADB Device Manager & Hardware Controller
-│   ├── actions.py              # Action implementations (swipe reel, human scroll, element click)
-│   ├── runner.py               # Background thread state machine & scheduler loop
-│   ├── models.py               # Pydantic schemas for workflows & devices
-│   └── workflows.json          # Bundled doom scroller workflows & default queue
+│   ├── main.py
+│   ├── device.py
+│   ├── actions.py
+│   ├── runner.py
+│   ├── models.py
+│   └── workflows.json
 ├── static/
-│   ├── index.html              # Antigravity HUD Web UI layout
-│   ├── style.css               # Futuristic minimal stylesheet (Montserrat & JetBrains Mono)
-│   └── app.js                  # Frontend reactive state & WebSocket client
-├── run.sh                      # Idempotent server management script
-├── build.sh                    # Linux single-file binary builder
-├── build_windows.bat           # Windows single-file binary builder (Batch)
-├── build_windows.ps1           # Windows single-file binary builder (PowerShell)
-├── android_automator.spec      # PyInstaller cross-platform bundle specification
-├── requirements.txt            # Python dependencies
-├── main_entry.py               # Standalone binary entrypoint
-├── test_system.py              # End-to-end integration test suite
-└── test_feed_scroller.py       # Standalone test script
+│   ├── index.html
+│   ├── style.css
+│   └── app.js
+├── run.sh
+├── build.sh
+├── build_windows.bat
+├── build_windows.ps1
+├── android_automator.spec
+├── requirements.txt
+├── main_entry.py
+├── test_system.py
+└── test_feed_scroller.py
 ```
 
 ---
 
-## Quick Start
+## Usage
 
-### 1. Launch with the Idempotent Runner
+### 1. Start Server
 ```bash
 ./run.sh
 ```
-Or run as a background daemon:
+Or start in the background:
 ```bash
 ./run.sh -d
 ```
@@ -72,47 +71,24 @@ Stop:
 ./run.sh stop
 ```
 
-### 2. Access the Dashboard
-Open your browser at:
+### 2. Open Web Dashboard
+Navigate in browser to:
 ```
 http://127.0.0.1:28491
 ```
 
 ---
 
-## Standalone Binary Build
+## Build Binaries
 
 ### Linux
 ```bash
 ./build.sh
 ```
-Produces `dist/android-automator-linux` (single 26MB executable with all dependencies and static assets bundled).
-
-Run it directly:
-```bash
-./dist/android-automator-linux --port 28491
-```
+Binary generated at `dist/android-automator-linux`.
 
 ### Windows
 ```cmd
 build_windows.bat
 ```
-or
-```powershell
-.\build_windows.ps1
-```
-Produces `dist\android-automator.exe`.
-
-Run it directly:
-```cmd
-dist\android-automator.exe --port 28491
-```
-
----
-
-## Automated Verification
-
-Run the integration test suite:
-```bash
-.venv/bin/python test_system.py
-```
+Binary generated at `dist\android-automator.exe`.
